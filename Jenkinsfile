@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Clone Repo') {
             steps {
-                git 'https://github.com/Setteler/comboall.git'
+                git branch: 'main', url: 'https://github.com/Setteler/comboall.git'
             }
         }
 

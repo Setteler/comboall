@@ -12,15 +12,26 @@ spec:
       labels:
         app: jenkins
     spec:
+      securityContext:
+        fsGroup: 1000  # Ensures Jenkins has access
+      initContainers:
+        - name: volume-permissions
+          image: busybox
+          command: [ "sh", "-c", "chown -R 1000:1000 /var/jenkins_home" ]
+          securityContext:
+            runAsUser: 0  # Run as root to change ownership
+          volumeMounts:
+            - name: jenkins-data
+              mountPath: /var/jenkins_home
       containers:
-      - name: jenkins
-        image: jenkins/jenkins:lts
-        ports:
-        - containerPort: 8080
-        volumeMounts:
-        - name: jenkins-data
-          mountPath: /var/jenkins_home
+        - name: jenkins
+          image: jenkins/jenkins:lts
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: jenkins-data
+              mountPath: /var/jenkins_home
       volumes:
-      - name: jenkins-data
-        persistentVolumeClaim:
-          claimName: jenkins-pvc
+        - name: jenkins-data
+          persistentVolumeClaim:
+            claimName: jenkins-pvc
