@@ -8,7 +8,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Selenium script into the container
-COPY flaskapp.py /app/web.py
+COPY app.py /app/web.py
 # Set the default command to run the script
 
 EXPOSE 5050
