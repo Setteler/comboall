@@ -4,7 +4,6 @@ pipeline {
     environment {
         DOCKER_IMAGE = "pegasusbi/com"
     }
-
     stages {
         stage('Clone Repo') {
             steps {
