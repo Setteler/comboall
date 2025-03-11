@@ -8,13 +8,7 @@ pipeline {
     stages {
         stage('Clone Repo') {
             steps {
-                script {
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: '*/main']],  // Ensure it pulls the main branch
-                        userRemoteConfigs: [[url: 'https://github.com/Setteler/comboall.git']]
-                    ])
-                }
+                git 'https://github.com/Setteler/comboall.git'
             }
         }
 
