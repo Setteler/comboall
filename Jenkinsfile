@@ -1,39 +1,68 @@
 pipeline {
-    agent any
+    agent any  // ✅ This will launch a Kubernetes pod
 
     environment {
-        DOCKER_IMAGE = "pegasusbi/com"
+        REGISTRY = "pegasusbi"
+        IMAGE_NAME = "com"
+        TAG = "latest"
     }
-    stages {
-        stage('Clone Repo') {
-            steps {
-                git 'https://github.com/Setteler/comboall.git'
-            }
-        }
 
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    sh "docker build -t $DOCKER_IMAGE:latest ."
+    stages {
+        stage('Build & Push Docker Image') {
+            agent {
+                kubernetes {
+                    yaml """
+                    apiVersion: v1
+                    kind: Pod
+                    metadata:
+                      labels:
+                        jenkins-agent: 'docker'
+                    spec:
+                      containers:
+                      - name: docker
+                        image: docker:20.10.23
+                        command: ['cat']
+                        tty: true
+                        volumeMounts:
+                          - name: docker-socket
+                            mountPath: /var/run/docker.sock
+                      volumes:
+                      - name: docker-socket
+                        hostPath:
+                          path: /var/run/docker.sock
+                          type: Socket
+                    """
                 }
             }
-        }
-
-        stage('Push to Docker Hub') {
             steps {
                 script {
-                    sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
-                    sh "docker push $DOCKER_IMAGE:latest"
+                    sh "docker build -t $REGISTRY/$IMAGE_NAME:$TAG ."
+                    sh "docker login -u your-dockerhub-username -p your-password"
+                    sh "docker push $REGISTRY/$IMAGE_NAME:$TAG"
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    sh "kubectl apply -f k8s/deployment.yaml"
-                    sh "kubectl apply -f k8s/service.yaml"
+            agent {
+                kubernetes {
+                    yaml """
+                    apiVersion: v1
+                    kind: Pod
+                    metadata:
+                      labels:
+                        jenkins-agent: 'kubectl'
+                    spec:
+                      containers:
+                      - name: kubectl
+                        image: bitnami/kubectl:latest
+                        command: ['cat']
+                        tty: true
+                    """
                 }
+            }
+            steps {
+                sh "kubectl set image deployment/com com=$REGISTRY/$IMAGE_NAME:$TAG --record"
             }
         }
     }
